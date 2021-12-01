@@ -1,2 +1,2 @@
 # aoc2021
-Advent of Code 2021 solutions
+Advent of Code 2021 solutions in Rust.
