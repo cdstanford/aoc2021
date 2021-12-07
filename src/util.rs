@@ -11,7 +11,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 
-/* Parsing */
+/*
+    Parsing
+*/
 
 // Convert a file to a vector of its lines
 pub fn file_to_vec_parsed<T>(filepath: &str) -> Vec<T>
@@ -36,7 +38,7 @@ pub fn file_to_vec_el(filepath: &str) -> Vec<String> {
     v
 }
 
-// Split by whitespace
+// Split by whitespace, and variants
 pub fn split(s: &str) -> Vec<String> {
     s.split(' ').map(|x| x.to_string()).collect()
 }
@@ -64,4 +66,20 @@ where
         panic!("Failed to parse: {} ({:?})", pair[0], err)
     });
     (t1, t2)
+}
+
+// Bool-char conversion
+pub fn bool_to_char(b: bool) -> char {
+    if b {
+        '1'
+    } else {
+        '0'
+    }
+}
+pub fn char_to_bool(ch: char) -> bool {
+    match ch {
+        '1' => true,
+        '0' => false,
+        _ => panic!("cannot convert to bool: {}", ch),
+    }
 }
