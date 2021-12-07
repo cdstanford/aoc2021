@@ -1,6 +1,6 @@
        1 ./src/lib.rs
-      68 ./src/bin/day01.rs
+      80 ./src/bin/day01.rs
       85 ./src/util.rs
       86 ./src/bin/day02.rs
      135 ./src/bin/day03.rs
-     375 total
+     387 total

@@ -7,19 +7,27 @@ use std::convert::TryInto;
 use std::fmt::Debug;
 
 /*
-    Iterator over N-tuples
+    Windowing abstraction
+
+    A sliding window is an iterator over all adjacent N-tuples in a given
+    input iterator.
+
     Note: requires N >= 1
 */
-struct TupleIter<T, I: Iterator<Item = T>, const N: usize> {
-    prev: Vec<T>, // vector of strictly less than N items
+
+struct SlidingWindow<I: Iterator, const N: usize> {
+    // N: window size
+    // vector of the last (N-1) items seen (if any)
+    prev: Vec<I::Item>,
+    // sub-iterator the window is over
     sub: I,
 }
-impl<T, I, const N: usize> Iterator for TupleIter<T, I, N>
+impl<I: Iterator, const N: usize> Iterator for SlidingWindow<I, N>
 where
-    T: Copy + Debug,
-    I: Iterator<Item = T>,
+    I: Iterator,
+    <I as Iterator>::Item: Clone + Debug,
 {
-    type Item = [T; N];
+    type Item = [I::Item; N];
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.prev.len() + 1 < N {
@@ -27,11 +35,11 @@ where
         }
         debug_assert_eq!(self.prev.len() + 1, N);
         let mut result = Vec::new();
-        for &i in &self.prev {
-            result.push(i);
+        for i in &self.prev {
+            result.push(i.clone());
         }
         let new = self.sub.next()?;
-        result.push(new);
+        result.push(new.clone());
         self.prev.push(new);
         self.prev.remove(0);
         debug_assert_eq!(result.len(), N);
@@ -39,13 +47,17 @@ where
     }
 }
 
-fn window<T, I, const N: usize>(iter: I) -> impl Iterator<Item = [T; N]>
-where
-    T: Copy + Debug,
-    I: Iterator<Item = T>,
-{
-    TupleIter { prev: vec![], sub: iter }
+// Extend Iterator trait to allow windowing with .window() syntax
+trait Window: Iterator + Sized {
+    fn window<const N: usize>(self) -> SlidingWindow<Self, N> {
+        SlidingWindow { prev: vec![], sub: self }
+    }
 }
+impl<I: Iterator> Window for I {}
+
+/*
+    Solutions
+*/
 
 fn pt1_cond(&[d1, d2]: &[&usize; 2]) -> bool {
     d1 < d2
@@ -59,10 +71,10 @@ fn main() {
     let depths: Vec<usize> = util::file_to_vec_parsed("input/day01.txt");
     println!(
         "Part 1 answer: {}",
-        window(depths.iter()).filter(pt1_cond).count(),
+        depths.iter().window().filter(pt1_cond).count(),
     );
     println!(
         "Part 2 answer: {}",
-        window(depths.iter()).filter(pt2_cond).count(),
+        depths.iter().window().filter(pt2_cond).count(),
     );
 }
