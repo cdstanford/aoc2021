@@ -5,6 +5,7 @@
     (copied from AoC 2020)
 */
 
+use std::convert::TryInto;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -33,4 +34,34 @@ pub fn file_to_vec_el(filepath: &str) -> Vec<String> {
     let mut v = file_to_vec(filepath);
     v.push("".to_owned());
     v
+}
+
+// Split by whitespace
+pub fn split(s: &str) -> Vec<String> {
+    s.split(' ').map(|x| x.to_string()).collect()
+}
+pub fn split_array<const N: usize>(s: &str) -> [String; N] {
+    split(s).try_into().unwrap_or_else(|err| {
+        panic!("String is not {} ws-separated parts: {} ({:?})", N, s, err)
+    })
+}
+pub fn split_pair(s: &str) -> (String, String) {
+    let pair: [String; 2] = split_array(s);
+    (pair[0].clone(), pair[1].clone())
+}
+pub fn split_pair_parsed<T1, T2>(s: &str) -> (T1, T2)
+where
+    T1: FromStr,
+    T2: FromStr,
+    <T1 as FromStr>::Err: Debug,
+    <T2 as FromStr>::Err: Debug,
+{
+    let pair: [String; 2] = split_array(s);
+    let t1 = pair[0].parse().unwrap_or_else(|err| {
+        panic!("Failed to parse: {} ({:?})", pair[0], err)
+    });
+    let t2 = pair[1].parse().unwrap_or_else(|err| {
+        panic!("Failed to parse: {} ({:?})", pair[0], err)
+    });
+    (t1, t2)
 }
