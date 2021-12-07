@@ -47,12 +47,22 @@ where
     TupleIter { prev: vec![], sub: iter }
 }
 
+fn pt1_cond(&[d1, d2]: &[&usize; 2]) -> bool {
+    d1 < d2
+}
+
+fn pt2_cond(&[d1, d2, d3, d4]: &[&usize; 4]) -> bool {
+    d1 + d2 + d3 < d2 + d3 + d4
+}
+
 fn main() {
     let depths: Vec<usize> = util::file_to_vec_parsed("input/day01.txt");
-    let pt1 = window(depths.iter()).filter(|[d1, d2]| d1 < d2).count();
-    println!("Part 1 answer: {}", pt1);
-    let pt2 = window(depths.iter())
-        .filter(|&[d1, d2, d3, d4]| d1 + d2 + d3 < d2 + d3 + d4)
-        .count();
-    println!("Part 2 answer: {}", pt2);
+    println!(
+        "Part 1 answer: {}",
+        window(depths.iter()).filter(pt1_cond).count(),
+    );
+    println!(
+        "Part 2 answer: {}",
+        window(depths.iter()).filter(pt2_cond).count(),
+    );
 }
