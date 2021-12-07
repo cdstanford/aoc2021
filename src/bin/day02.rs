@@ -24,25 +24,38 @@ impl Command {
 
 #[derive(Debug)]
 struct Submarine {
-    // Horizontal position
-    x: usize,
-    // Depth
-    y: usize,
+    xpos: usize,
+    depth: usize,
+    aim: usize,
 }
 impl Default for Submarine {
     fn default() -> Self {
-        Submarine { x: 0, y: 0 }
+        Submarine { xpos: 0, depth: 0, aim: 0 }
     }
 }
 impl Submarine {
     fn new() -> Self {
         Default::default()
     }
-    fn execute(&mut self, comm: &Command) {
+    fn execute_pt1(&mut self, comm: &Command) {
         match comm {
-            Command::Fwd(i) => self.x += i,
-            Command::Down(i) => self.y += i,
-            Command::Up(i) => self.y -= i,
+            Command::Fwd(i) => self.xpos += i,
+            Command::Down(i) => self.depth += i,
+            Command::Up(i) => self.depth -= i,
+        }
+    }
+    fn execute_pt2(&mut self, comm: &Command) {
+        match comm {
+            Command::Fwd(i) => {
+                self.xpos += i;
+                self.depth += self.aim * i;
+            }
+            Command::Down(i) => {
+                self.aim += i;
+            }
+            Command::Up(i) => {
+                self.aim -= i;
+            }
         }
     }
 }
@@ -52,11 +65,22 @@ fn main() {
         .iter()
         .map(|x| Command::parse(x))
         .collect();
-    let mut sub = Submarine::new();
-    println!("Initial state: {:?}", sub);
-    for instr in instrs.iter() {
-        sub.execute(instr);
+    {
+        let mut sub = Submarine::new();
+        println!("[Part 1] Initial state: {:?}", sub);
+        for instr in instrs.iter() {
+            sub.execute_pt1(instr);
+        }
+        println!("[Part 1] End state: {:?}", sub);
+        println!("[Part 1] Answer: {}", sub.xpos * sub.depth)
     }
-    println!("End state: {:?}", sub);
-    println!("Part 1 answer: {}", sub.x * sub.y)
+    {
+        let mut sub = Submarine::new();
+        println!("[Part 2] Initial state: {:?}", sub);
+        for instr in instrs.iter() {
+            sub.execute_pt2(instr);
+        }
+        println!("[Part 2] End state: {:?}", sub);
+        println!("[Part 2] Answer: {}", sub.xpos * sub.depth)
+    }
 }
