@@ -3,30 +3,36 @@
 */
 
 use aoc2021::util;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 
-// Bingo board dimensions
+/// Bingo board dimensions
 const N: usize = 5;
-// Number of bingo rows on the N x N board
+/// Number of bingo rows on the N x N board
 const N_BINGO_ROWS: usize = 12;
+
+#[derive(Debug, Clone, Copy)]
+struct BoardId(usize);
+impl BoardId {
+    fn inc(&mut self) {
+        self.0 += 1;
+    }
+}
 
 #[derive(Debug, Clone)]
 struct BingoLine {
-    board_id: usize,
+    board_id: BoardId,
     remaining: HashSet<usize>,
 }
 impl BingoLine {
-    fn new(board_id: usize, row: impl IntoIterator<Item = usize>) -> Self {
+    fn new(board_id: BoardId, row: impl IntoIterator<Item = usize>) -> Self {
         let remaining: HashSet<usize> = row.into_iter().collect();
         debug_assert_eq!(remaining.len(), N);
         Self { board_id, remaining }
     }
-    #[allow(dead_code)]
     fn remove(&mut self, i: usize) {
         self.remaining.remove(&i);
     }
-    #[allow(dead_code)]
     fn is_won(&self) -> bool {
         self.remaining.is_empty()
     }
@@ -34,7 +40,7 @@ impl BingoLine {
 
 #[derive(Debug)]
 struct BingoBoard {
-    id: usize,
+    id: BoardId,
     board: [[usize; N]; N],
 }
 impl BingoBoard {
@@ -64,15 +70,80 @@ impl BingoBoard {
     }
 }
 
-fn parse_input(
-    raw: &[String],
-) -> (Vec<usize>, Vec<BingoBoard>, Vec<BingoLine>) {
+#[derive(Debug, Default)]
+struct BingoGame {
+    boards: Vec<BingoBoard>,
+    lines: Vec<BingoLine>,
+    // Map from a number to all lines including that number
+    lines_including: HashMap<usize, Vec<usize>>,
+    // Any winning board numbers
+    winners: Vec<BoardId>,
+    // Seen numbers
+    seen: HashSet<usize>,
+}
+impl BingoGame {
+    fn new() -> Self {
+        Default::default()
+    }
+    /// Add a new N x N bingo board to the game
+    fn add_board(&mut self, board: BingoBoard) {
+        // Check that ID is as expected
+        debug_assert_eq!(board.id.0, self.boards.len());
+
+        // Add lines on the board
+        for line in board.get_bingo_lines().iter() {
+            let line_no = self.lines.len();
+            self.lines.push(line.clone());
+            for &num in line.remaining.iter() {
+                self.lines_including
+                    .entry(num)
+                    .or_insert_with(Vec::new)
+                    .push(line_no);
+            }
+        }
+
+        self.boards.push(board);
+    }
+    /// Call a number, return winner if any and winning score
+    fn call_num(&mut self, num: usize) -> Option<(BoardId, usize)> {
+        self.seen.insert(num);
+        let line_nos = self.lines_including.get(&num).unwrap();
+        for &line_no in line_nos {
+            self.lines[line_no].remove(num);
+            if self.lines[line_no].is_won() {
+                self.winners.push(self.lines[line_no].board_id)
+            }
+        }
+        if self.winners.is_empty() {
+            None
+        } else {
+            debug_assert_eq!(self.winners.len(), 1);
+            let winner = self.winners[0];
+            let score = num * self.get_sum(winner);
+            Some((winner, score))
+        }
+    }
+    /// Get board sum
+    fn get_sum(&self, board_id: BoardId) -> usize {
+        let mut sum = 0;
+        for i in 0..N {
+            for j in 0..N {
+                let val = self.boards[board_id.0].board[i][j];
+                if !self.seen.contains(&val) {
+                    sum += val;
+                }
+            }
+        }
+        sum
+    }
+}
+
+fn parse_input(raw: &[String]) -> (BingoGame, Vec<usize>) {
     let mut raw_iter = raw.iter();
     let nums: Vec<usize> = util::split_by_parsed(raw_iter.next().unwrap(), ',');
-    let mut boards: Vec<BingoBoard> = Vec::new();
-    let mut lines: Vec<BingoLine> = Vec::new();
+    let mut game = BingoGame::new();
 
-    let mut id = 0;
+    let mut id = BoardId(0);
     while let Some(s) = raw_iter.next() {
         assert_eq!(s, "");
         let mut rows = Vec::new();
@@ -82,17 +153,23 @@ fn parse_input(
             rows.push(row);
         }
         let board = BingoBoard { id, board: rows.try_into().unwrap() };
-        for line in board.get_bingo_lines().iter() {
-            lines.push(line.clone())
-        }
-        boards.push(board);
-        id += 1;
+        game.add_board(board);
+        id.inc();
     }
-    (nums, boards, lines)
+    (game, nums)
 }
 
 fn main() {
     let raw = util::file_to_vec("input/day04.txt");
-    let (nums, boards, lines) = parse_input(&raw);
-    print!("{:?} {:?} {:?}", nums, boards, lines);
+    let (mut game, nums) = parse_input(&raw);
+    // print!("{:?} {:?}", game, nums);
+
+    // Part 1
+    for &num in &nums {
+        if let Some((winner, score)) = game.call_num(num) {
+            println!("Winning board #: {}", winner.0);
+            println!("Board score (part 1 answer): {}", score);
+            break;
+        }
+    }
 }
