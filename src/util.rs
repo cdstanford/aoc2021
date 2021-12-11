@@ -40,10 +40,45 @@ pub fn file_to_vec_el(filepath: &str) -> Vec<String> {
 
 // Split by whitespace, and variants
 pub fn split(s: &str) -> Vec<String> {
-    s.split(' ').map(|x| x.to_string()).collect()
+    s.split_whitespace().map(|x| x.to_string()).collect()
+}
+pub fn split_parsed<T>(s: &str) -> Vec<T>
+where
+    T: FromStr,
+    <T as FromStr>::Err: Debug,
+{
+    s.split_whitespace()
+        .map(|x| {
+            x.parse().unwrap_or_else(|err| {
+                panic!("Failed to parse: {} ({:?})", x, err)
+            })
+        })
+        .collect()
+}
+pub fn split_by_parsed<T>(s: &str, ch: char) -> Vec<T>
+where
+    T: FromStr,
+    <T as FromStr>::Err: Debug,
+{
+    s.split(ch)
+        .map(|x| {
+            x.parse().unwrap_or_else(|err| {
+                panic!("Failed to parse: {} ({:?})", x, err)
+            })
+        })
+        .collect()
 }
 pub fn split_array<const N: usize>(s: &str) -> [String; N] {
     split(s).try_into().unwrap_or_else(|err| {
+        panic!("String is not {} ws-separated parts: {} ({:?})", N, s, err)
+    })
+}
+pub fn split_array_parsed<T, const N: usize>(s: &str) -> [T; N]
+where
+    T: Debug + FromStr,
+    <T as FromStr>::Err: Debug,
+{
+    split_parsed(s).try_into().unwrap_or_else(|err| {
         panic!("String is not {} ws-separated parts: {} ({:?})", N, s, err)
     })
 }
